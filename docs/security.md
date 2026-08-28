@@ -37,11 +37,11 @@ gaps that are NOT yet in the roadmap.
   dependency-check on every PR; fail the build on critical CVEs.
 - **Rate limiting on the auth endpoint** (Phase 1 or 4): a bucket4j/Redis
   limiter so a misbehaving merchant cannot exhaust the auth path.
+  *(Resolved: now a Phase 4 roadmap task.)*
 - **Automated PAN-leak prevention** (Phase 8): a CI job that greps the repo and
   test output for full-PAN patterns (`\d{13,19}` matching Luhn) — "never commit
   real card numbers" becomes a gate, not prose.
-- **API authorization model** (Phase 1): decide *what* AuthN means — per-merchant
-  API keys vs OAuth2 client credentials — and write the ADR.
+- **API authorization model** (Phase 1): ~~decide *what* AuthN means~~ **resolved: Spring Security with per-merchant API keys (`X-API-Key`) via a custom filter in Phase 1; evolve to OAuth2 resource server (JWT) if/when a real identity provider enters the picture. ADR still to be written.**
 - **Transport security** (Phase 4+): TLS termination point, mTLS between
   internal services (deferred to Phase 9 today).
 

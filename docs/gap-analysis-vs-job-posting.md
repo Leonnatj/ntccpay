@@ -23,21 +23,19 @@ or "out of scope". Backend-first.
 ## 2. Gaps — real differences worth knowing about
 
 Ordered by how much they matter to this project's goals.
+**Status note: items 1–3 have been added to ROADMAP.md (Phases 4, 5, 6).**
 
-1. **Availability target (99.99%)** — the roadmap has a *latency* SLO (99.9% of
-   auths < 150ms) but no *availability* SLO, no error budget, and no zero-downtime
-   deploy proof (there is a rollback drill, but not "deploy under load, zero failed
-   auths"). **Decision: add an availability SLO + error budget in Phase 5 and a
-   zero-downtime deploy drill in Phase 6/8.** Cheap to add, closes the biggest gap.
-2. **Client-side retry logic** — Phase 4 lists timeout/CB/bulkhead but no Resilience4j
-   **Retry with backoff + jitter** on the auth-api → decision-service call, and no
-   explicit "retries are safe because calls are idempotency-keyed" statement.
-   **Decision: add to Phase 4 — one task, one paragraph in the ADR.**
-3. **Graceful degradation** — a circuit breaker opens, but then what? No explicit
-   fallback (e.g., serve from stale Caffeine BIN cache with a `DEGRADED` flag) and
-   no load shedding. **Decision: add a fallback + 503/Retry-After behavior to
-   Phase 4.** Rate limiting (bucket4j + Redis) is already a known gap in
-   `docs/security.md` — same phase.
+1. **Availability target (99.99%)** — ✅ *added to roadmap.* Latency SLO existed,
+   but no *availability* SLO, error budget, or zero-downtime deploy proof.
+   Now: availability SLO + error budget in Phase 5; PodDisruptionBudgets +
+   zero-downtime deploy drill under k6 load in Phase 6.
+2. **Client-side retry logic** — ✅ *added to roadmap.* Resilience4j Retry with
+   backoff + jitter on the auth-api → decision-service call, safe because of
+   idempotency keys. Now a Phase 4 task with the pairing documented in the ADR.
+3. **Graceful degradation** — ✅ *added to roadmap.* Explicit fallback when the
+   breaker is open (stale Caffeine BIN cache + `DEGRADED` flag), load shedding
+   (503 + Retry-After), and per-merchant rate limiting (bucket4j + Redis) —
+   Phase 4; the rate-limiting gap in `docs/security.md` is resolved by this.
 4. **Inbound callback handling** — notification-service does *outbound* webhooks;
    there is no *inbound* callback receiver (HMAC signature verification, dedupe by
    event id, async processing). Common in real payment integrations.
