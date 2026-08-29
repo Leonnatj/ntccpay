@@ -1,6 +1,5 @@
 package com.ntccpay.auth.infrastructure.config;
 
-import com.ntccpay.auth.application.port.out.AuthorizationRepository;
 import com.ntccpay.auth.domain.service.AuthorizationRuleEngine;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,10 +15,5 @@ public class AuthApiConfig {
                 properties.perTransactionLimit(),
                 properties.blockedCards(),
                 properties.blockedBins());
-    }
-
-    @Bean
-    public AuthorizationRepository authorizationRepository() {
-        return new com.ntccpay.auth.infrastructure.persistence.InMemoryAuthorizationRepository();
     }
 }

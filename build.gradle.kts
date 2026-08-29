@@ -31,7 +31,7 @@ dependencies {
     // Cucumber BOM aligns all io.cucumber.* versions
     testImplementation(platform("io.cucumber:cucumber-bom:$cucumberVersion"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-webmvc-test-autoconfigure")
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.cucumber:cucumber-java")
     testImplementation("io.cucumber:cucumber-junit-platform-engine")
