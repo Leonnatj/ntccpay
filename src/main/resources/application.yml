@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: auth-api
+
+server:
+  port: 8080
+
+ntccpay:
+  rules:
+    supported-currencies: [USD, EUR, GBP]
+    per-transaction-limit: 50000
+    blocked-cards: [4000000000000002]
+    blocked-bins: [400100]
+  security:
+    # Development only. Real merchant keys come from the environment / secrets manager.
+    api-keys:
+      acme-corp: change-me-acme-key
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -314,6 +314,7 @@ by execution, not theory.
 5. **Write ADRs** (short markdown in `docs/adr/`) whenever you choose X over Y.
 6. **Mind the PAN — the repo is public.** Every fixture, test, log line, and commit message uses only synthetic test card numbers (e.g., Stripe's `4242...`); treat a real PAN in any commit as a critical incident. Mask in logs (`****1111`).
 7. **No secrets in git, ever.** Credentials go in environment variables, GitHub Actions secrets, and AWS Secrets Manager; gitleaks in CI (Phase 8) is the safety net — and a public, clean history is itself portfolio evidence.
+8. **The human owns git history.** The agent may run read-only git commands (log, status, diff) to stay oriented, but never `add`/`commit`/`push`/`merge`/`reset` on its own — it proposes the exact commands and the human runs them.
 
 ---
 

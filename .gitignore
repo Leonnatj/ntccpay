@@ -5,6 +5,9 @@ out/
 *.class
 *.jar
 
+# Gradle
+.gradle/
+
 # IDE
 .idea/
 *.iml
