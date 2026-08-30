@@ -36,4 +36,5 @@ desktop.ini
 *.key
 application-local.properties
 application-local.yml
+secrets/
 
