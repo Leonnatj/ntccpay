@@ -4,6 +4,8 @@ build/
 out/
 *.class
 *.jar
+# ...except the committed Gradle wrapper jar (required by GitHub/CI analysis)
+!gradle/wrapper/gradle-wrapper.jar
 
 # Gradle
 .gradle/
