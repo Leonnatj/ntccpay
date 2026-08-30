@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: ntccpay
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - name: pg
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: ntccpay
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            # Postgres entrypoint reads the *_FILE variants, so credentials
+            # are mounted as files from the Secret, not exposed as env vars.
+            - name: POSTGRES_USER_FILE
+              value: /etc/postgres-secrets/username
+            - name: POSTGRES_PASSWORD_FILE
+              value: /etc/postgres-secrets/password
+            - name: POSTGRES_DB_FILE
+              value: /etc/postgres-secrets/database
+          volumeMounts:
+            - name: credentials
+              mountPath: /etc/postgres-secrets
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$(cat /etc/postgres-secrets/username)" -d "$(cat /etc/postgres-secrets/database)"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: credentials
+          secret:
+            secretName: postgres-credentials
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
