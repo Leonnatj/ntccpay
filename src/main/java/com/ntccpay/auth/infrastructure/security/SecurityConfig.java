@@ -19,6 +19,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ApiKeyProperties apiKeyProperties) throws Exception {
         http
+                // Stateless token-authenticated API (X-API-Key header, no cookies/sessions —
+                // see docs/adr/0003-csrf-disabled-stateless-api.md): no ambient credentials exist,
+                // so a cross-site forged request cannot authenticate and CSRF defenses are moot.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth

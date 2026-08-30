@@ -147,11 +147,11 @@ skip exit criteria — they are the actual skill being learned.
 **Core — install now:**
 
 - [x] **JDK 25 (LTS)** — Eclipse Temurin; verify: `java -version`
-- [ ] **PostgreSQL — containerized (decision: no native installs)**: run Postgres only via Docker/Testcontainers. Uninstall the native install now — Phase 1 needs no DB, and this avoids port-5432 conflicts and "which DB am I hitting?" confusion while keeping dev at version parity with RDS in Phase 7. `psql` access happens via `docker exec -it <pg-container> psql` — no Windows client install needed
+- [x] **PostgreSQL — containerized (decision: no native installs)**: run Postgres only via Docker/Testcontainers. Uninstall the native install now — Phase 1 needs no DB, and this avoids port-5432 conflicts and "which DB am I hitting?" confusion while keeping dev at version parity with RDS in Phase 7. `psql` access happens via `docker exec -it <pg-container> psql` — no Windows client install needed. **Done:** `postgres:17-alpine` via docker-compose with file-based secrets (`docker-compose.yml`; `secrets/` git-ignored, k8s Secret created from the same files), healthcheck via `pg_isready`, persistent volume. Gotcha fixed: Windows CRLF in secret files corrupts `POSTGRES_USER_FILE` values — the init role becomes `ntccpay\r`. Always `tr -d '\r'` secret files on Windows. Verified end-to-end via `docker exec psql` (role + db created, healthy). k8s manifests (`k8s/`) pre-stage Phase 6
 - [x] **IntelliJ IDEA** — Lombok plugin enabled, Project SDK = 25 (bundled HTTP Client covers
       all API testing; no Postman needed)
-- [ ] **Git repo + GitHub** (repo was lost — reinitialize): `git init -b main` (explicit `main`, not the 2.33 default `master`), add `.gitignore` (Maven/Gradle + `.idea/` + `target/` + `*.iml`), then `git add ROADMAP.md && git commit -m "docs: add ccpay learning roadmap"` and push to GitHub. Docs and scaffolding go straight to `main` — branches start in Phase 1
-- [ ] **Docker Desktop** — required by Phase 2 (Testcontainers + docker-compose):
+- [x] **Git repo + GitHub** (repo was lost — reinitialize): `git init -b main` (explicit `main`, not the 2.33 default `master`), add `.gitignore` (Maven/Gradle + `.idea/` + `target/` + `*.iml`), then `git add ROADMAP.md && git commit -m "docs: add ccpay learning roadmap"` and push to GitHub. Docs and scaffolding go straight to `main` — branches start in Phase 1. **Done:** pushed to `github.com/Leonnatj/ntccpay`, `main` in sync with `origin/main`
+- [x] **Docker Desktop** — required by Phase 2 (Testcontainers + docker-compose):
       `winget install Docker.DockerDesktop`, then verify `docker run hello-world`.
       Last blocker before Phase 2; nothing else on this list needs it sooner
 
@@ -171,29 +171,29 @@ skip exit criteria — they are the actual skill being learned.
 hello-world Spring Boot app. Docker can wait until Phase 2 — but install it before starting that
 phase, not after (and uninstall the native PostgreSQL first, per above).
 
-- [ ] Skim: what a Maven/Gradle build is, what a Spring Boot "fat jar" is
+- [x] Skim: what a Maven/Gradle build is, what a Spring Boot "fat jar" is — **done for real:** the build was migrated Maven → Gradle 9.7.1 (Kotlin DSL), see `docs/adr/0001-maven-over-gradle.md` and `docs/adr/0002-gradle-replaces-maven.md`
 
-### Phase 1 — The auth decision, in-memory (Week 1–2)
+### Phase 1 — The auth decision, in-memory (Week 1–2) — ✅ COMPLETE
 > Learn: Spring Boot fundamentals, hexagonal architecture + DDD, TDD/BDD, REST, idempotency.
 
-- [ ] Generate project on Spring Initializr → **auth-api**: Web, Validation, Actuator, Lombok
-- [ ] **README.md from the first commit** (this is a public showcase repo): what ccpay is, the architecture diagram, the latency/money-correctness constraints, how to run it, and a phase-by-phase learning log — update it as each phase lands
-- [ ] **Start the branch + PR workflow now** (solo but deliberate): one short-lived branch per feature (`feat/rule-engine`, `feat/idempotency-key`), conventional commits (`feat:`, `fix:`, `test:`), open a PR against `main` even alone, squash-merge, keep `main` always green — this habit is exactly what Phase 8's CI/CD will automate
-- [ ] Domain model: `AuthorizationRequest` (PAN, amount, currency, merchant, idempotency key), `AuthorizationDecision` (APPROVED/DECLINED + reason codes)
-- [ ] Hexagonal layout: `domain/` (pure logic, no Spring), `application/` (ports), `infrastructure/` (adapters)
-- [ ] **Start the ubiquitous language**: create `docs/ubiquitous-language.md` (Authorization, Capture, Decline, Reason Code, BIN…) and use those exact words in code, tests, and Gherkin
-- [ ] **Tactical DDD**: value objects (`Money` in minor units, self-masking `CardNumber`, `Bin`, `IdempotencyKey`, `ReasonCode`), the `Authorization` **aggregate root** enforcing its invariants ("a decision, once made, is immutable"; "one decision per idempotency key"), and domain events (`AuthorizationRequested`, `AuthorizationApproved`, `AuthorizationDeclined`) raised by the aggregate
-- [ ] Rule engine v1 (pure Java, unit tested): amount > limit? currency supported? card blocklisted?
-- [ ] Luhn check + BIN validation on the PAN; **never log or store full PAN** (PCI mindset from day 1)
-- [ ] `POST /v1/authorizations` with `Idempotency-Key` header — replay returns the original decision
-- [ ] **DTOs at the API boundary**: `AuthorizationRequestDto` / `AuthorizationResponseDto` as Java records — the controller maps DTO → domain command → aggregate, and aggregate → response DTO; never expose the domain model over HTTP; response carries only the masked PAN (DDD translation layer at the edge)
-- [ ] **Spring Security basics**: secure everything by default (`/actuator/health` public, all else denied), API-key auth on the authorization endpoint, 401/403 as problem+json
-- [ ] Global exception handler, problem+json errors, request validation
-- [ ] **BDD acceptance tests with Cucumber**: Gherkin features for the decision rules (e.g. `authorization-decision.feature`: "Given a card from a blocked BIN / When an authorization is requested / Then the decision is DECLINED with reason CARD_BLOCKED"); step definitions drive the domain through its ports — no HTTP, no Spring context for the pure rule scenarios
-- [ ] Fast unit tests stay plain JUnit 5 (edge cases, boundary values); Cucumber only for business-readable behavior — don't write every test in Gherkin
-- [ ] Integration tests with `@SpringBootTest` + `MockMvc`
+- [x] Generate project on Spring Initializr → **auth-api**: Web, Validation, Actuator, Lombok
+- [x] **README.md from the first commit** (this is a public showcase repo): what ccpay is, the architecture diagram, the latency/money-correctness constraints, how to run it, and a phase-by-phase learning log — update it as each phase lands
+- [x] **Start the branch + PR workflow now** (solo but deliberate): one short-lived branch per feature (`feat/rule-engine`, `feat/idempotency-key`), conventional commits (`feat:`, `fix:`, `test:`), open a PR against `main` even alone, squash-merge, keep `main` always green — this habit is exactly what Phase 8's CI/CD will automate. First feature branch (`feat/gradle-migration`) merged and deleted
+- [x] Domain model: `AuthorizationRequest` (PAN, amount, currency, merchant, idempotency key), `AuthorizationDecision` (APPROVED/DECLINED + reason codes)
+- [x] Hexagonal layout: `domain/` (pure logic, no Spring), `application/` (ports), `infrastructure/` (adapters)
+- [x] **Start the ubiquitous language**: create `docs/ubiquitous-language.md` (Authorization, Capture, Decline, Reason Code, BIN…) and use those exact words in code, tests, and Gherkin
+- [x] **Tactical DDD**: value objects (`Money` in minor units, self-masking `CardNumber`, `Bin`, `IdempotencyKey`, `ReasonCode`), the `Authorization` **aggregate root** enforcing its invariants ("a decision, once made, is immutable"; "one decision per idempotency key"), and domain events (`AuthorizationRequested`, `AuthorizationApproved`, `AuthorizationDeclined`) raised by the aggregate
+- [x] Rule engine v1 (pure Java, unit tested): amount > limit? currency supported? card blocklisted?
+- [x] Luhn check + BIN validation on the PAN; **never log or store full PAN** (PCI mindset from day 1)
+- [x] `POST /v1/authorizations` with `Idempotency-Key` header — replay returns the original decision
+- [x] **DTOs at the API boundary**: `AuthorizationRequestDto` / `AuthorizationResponseDto` as Java records — the controller maps DTO → domain command → aggregate, and aggregate → response DTO; never expose the domain model over HTTP; response carries only the masked PAN (DDD translation layer at the edge)
+- [x] **Spring Security basics**: secure everything by default (`/actuator/health` public, all else denied), API-key auth on the authorization endpoint, 401/403 as problem+json
+- [x] Global exception handler, problem+json errors, request validation
+- [x] **BDD acceptance tests with Cucumber**: Gherkin features for the decision rules (e.g. `authorization-decision.feature`: "Given a card from a blocked BIN / When an authorization is requested / Then the decision is DECLINED with reason CARD_BLOCKED"); step definitions drive the domain through its ports — no HTTP, no Spring context for the pure rule scenarios
+- [x] Fast unit tests stay plain JUnit 5 (edge cases, boundary values); Cucumber only for business-readable behavior — don't write every test in Gherkin
+- [x] Integration tests with `@SpringBootTest` + `MockMvc`
 
-**Exit:** `./mvnw test` green; curl an auth → APPROVED/DECLINED; idempotent replay
+**Exit:** `./gradlew test` green (47 tests: unit + Cucumber + MockMvc integration); curl an auth → APPROVED/DECLINED; idempotent replay
 returns the same decision; the decision path has zero I/O; the Gherkin feature file
 reads like the business rule document it replaces.
 
@@ -229,6 +229,7 @@ restart loses no events (outbox works).
 > Learn: service decomposition, REST clients, resilience, Redis, strategic DDD.
 
 - [ ] Extract **decision-service** (rules, BIN table, limits) — auth-api calls it synchronously over REST
+- [ ] Extract **reference-data-service** (Postgres-backed): currency registry (`code`, `name`, `minor_units`, `active`) now; BIN ranges, MCC, country lists later. Consumers cache at startup + scheduled refresh with baked-in fallback (auth critical path never depends on a reference-data call at runtime). Decision: PostgreSQL, not MongoDB — fixed relational schema + future FK integrity (see §2.1 ADR). `RuleEngineProperties.supported-currencies` becomes the fallback seed only
 - [ ] **Caching strategy (L1/L2)**: BIN table in **Caffeine** (in-process, short TTL, zero network hops — it's tiny and immutable); velocity counters in **Redis** (shared across pods, atomic `INCR` + `EXPIRE`, sliding windows). Learn why embedded caches (Ehcache) and data grids (Hazelcast) lose here: per-JVM caches break under HPA scaling, grids hand-roll what Redis gives you for free; measure the latency delta
 - [ ] Resilience4j: timeouts, circuit breaker, bulkhead — a slow decision-service must not sink auth-api
 - [ ] **Service-to-service security**: OAuth2 client-credentials flow (JWT) between auth-api and decision-service using Spring Security's resource-server support; run **Keycloak** in docker-compose as the IdP — this is how real payment platforms authenticate internal hops (mTLS comes in Phase 9)
@@ -328,7 +329,6 @@ by execution, not theory.
 
 Ask me to scaffold Phase 1 (project structure, rule engine with tests, controller,
 idempotency) whenever you're ready.
-
 
 
 
