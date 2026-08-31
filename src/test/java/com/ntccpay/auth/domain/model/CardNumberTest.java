@@ -50,4 +50,22 @@ class CardNumberTest {
         assertThat(new CardNumber("4242424242424242"))
                 .isNotEqualTo(new CardNumber("4000000000000002"));
     }
+
+    // ---- masked references: what persistence rehydration carries (PCI) ----
+
+    @Test
+    void aMaskedReferenceCarriesNoPanAndCannotFakeOne() {
+        var card = CardNumber.maskedReference("****4242");
+
+        assertThat(card.isMaskedReference()).isTrue();
+        assertThat(card.masked()).isEqualTo("****4242");
+        assertThat(card.toString()).isEqualTo("****4242");
+        assertThatThrownBy(card::raw)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("never stored");
+        assertThatThrownBy(card::luhnValid)
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(card::bin)
+                .isInstanceOf(IllegalStateException.class);
+    }
 }

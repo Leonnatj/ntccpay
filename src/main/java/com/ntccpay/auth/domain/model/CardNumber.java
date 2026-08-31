@@ -7,20 +7,41 @@ package com.ntccpay.auth.domain.model;
 public record CardNumber(String value) {
 
     private static final String DIGITS_13_TO_19 = "\\d{13,19}";
+    private static final String MASKED_REFERENCE = "\\*{4}\\d{4}";
 
     public CardNumber {
-        if (value == null || !value.matches(DIGITS_13_TO_19)) {
+        if (value == null
+                || (!value.matches(DIGITS_13_TO_19) && !value.matches(MASKED_REFERENCE))) {
             throw new IllegalArgumentException("PAN must be 13-19 digits");
         }
     }
 
+    /**
+     * Display-only card reference for aggregates rehydrated from storage: the
+     * full PAN was never persisted (PCI), so only the masked form exists.
+     */
+    public static CardNumber maskedReference(String masked) {
+        return new CardNumber(masked);
+    }
+
+    /** True when this instance carries only the masked form (persisted history). */
+    public boolean isMaskedReference() {
+        return value.matches(MASKED_REFERENCE);
+    }
+
     /** Standard Luhn checksum validation. */
     public boolean luhnValid() {
+        if (isMaskedReference()) {
+            throw new IllegalStateException("Luhn needs the full PAN; masked references carry none");
+        }
         return isValidLuhn(value);
     }
 
     /** The first six digits identifying the issuing institution. */
     public Bin bin() {
+        if (isMaskedReference()) {
+            throw new IllegalStateException("BIN needs the full PAN; masked references carry none");
+        }
         return new Bin(value.substring(0, 6));
     }
 
@@ -35,8 +56,14 @@ public record CardNumber(String value) {
         return masked();
     }
 
-    /** Raw access for fingerprinting and rule checks. Never log the result. */
+    /**
+     * Raw access for fingerprinting and rule checks. Never log the result.
+     * Refuses on masked references: the PAN was never stored, so it cannot leak.
+     */
     public String raw() {
+        if (isMaskedReference()) {
+            throw new IllegalStateException("full PAN was never stored; only the masked reference is available");
+        }
         return value;
     }
 

@@ -1,6 +1,25 @@
 spring:
   application:
     name: auth-api
+  datasource:
+    # Host-run dev hits the compose Postgres published on localhost. Inside the
+    # app container, compose overrides SPRING_DATASOURCE_URL to postgres:5432.
+    url: jdbc:postgresql://localhost:5432/ntccpay
+    username: ntccpay
+    # Development only; real credentials come from the environment / secrets
+    # (compose injects SPRING_DATASOURCE_PASSWORD; k8s uses secretKeyRef).
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      # Flyway owns the schema; Hibernate must never create or alter it.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    locations: classpath:db/migration
 
 server:
   port: 8080

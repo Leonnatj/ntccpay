@@ -1,4 +1,4 @@
-# ccpay — Card Payment Authorization Platform
+# ntccpay — Card Payment Authorization Platform
 
 A production-style card payment authorization platform, built from scratch as a
 learning vehicle for modern cloud development.
@@ -90,7 +90,7 @@ Postgres is truth.
 
 ## 2.2 Domain-Driven Design (DDD)
 
-DDD is the design backbone of ccpay: the architecture (Phase 1) and the service
+DDD is the design backbone of ntccpay: the architecture (Phase 1) and the service
 split (Phase 4) both *derive from* the domain model instead of being chosen ad hoc.
 
 ### Ubiquitous language (from day 1)
@@ -197,19 +197,32 @@ phase, not after (and uninstall the native PostgreSQL first, per above).
 returns the same decision; the decision path has zero I/O; the Gherkin feature file
 reads like the business rule document it replaces.
 
-### Phase 2 — Persistence + Docker Compose (Week 3–4)
+### Phase 2 — Persistence + Docker Compose (Week 3–4) — ✅ COMPLETE
 > Learn: Postgres, Flyway, Testcontainers, Docker, DB design for money.
 
-- [ ] Spring Data JPA + Flyway; Postgres via **Testcontainers** in tests (Spring Data JPA uses **Hibernate** as its JPA provider under the hood — you get it automatically; the "persistence model ≠ domain model" task below is how you keep it in its lane)
-- [ ] Schema: `authorizations`, `idempotency_keys` (unique constraint = the idempotency guarantee); amounts as `BIGINT` minor units + `CHAR(3)` currency
-- [ ] Money-correct DB design: optimistic locking, append-only writes, audit columns
-- [ ] **Persistence model ≠ domain model**: map the `Authorization` aggregate to tables inside the infrastructure adapter; keep JPA/Spring annotations out of `domain/` (the aggregate remains persistence-ignorant)
-- [ ] `docker-compose.yml`: postgres + app; learn volumes, networks, healthchecks, `depends_on: condition: service_healthy`
-- [ ] Multi-stage `Dockerfile` → small non-root runtime image
+- [x] Spring Data JPA + Flyway; Postgres via **Testcontainers** in tests (Spring Data JPA uses **Hibernate** as its JPA provider under the hood — you get it automatically; the "persistence model ≠ domain model" task below is how you keep it in its lane).
+      **Done:** repository tests run against real Postgres 17 via `@ServiceConnection` (`JpaAuthorizationRepositoryTest` on `@DataJpaTest`); the controller integration suite does too.
+      **Boot 4.1 gotchas hit and fixed:**
+  - Slice-test annotations moved to their own modules: `@DataJpaTest` → `org.springframework.boot:spring-boot-data-jpa-test`, `@AutoConfigureTestDatabase` → `spring-boot-jdbc-test`.
+  - **Flyway silently never runs** with bare `flyway-core` in Boot 4 — the integration is its own module: `org.springframework.boot:spring-boot-flyway`.
+  - Testcontainers 2.x renamed artifacts: `org.testcontainers:postgresql` → `testcontainers-postgresql`, `:junit-jupiter` → `testcontainers-junit-jupiter`; `PostgreSQLContainer` is no longer generic (`org.testcontainers.postgresql`).
+- [x] Schema: `authorizations`, `idempotency_keys` (unique constraint = the idempotency guarantee); amounts as `BIGINT` minor units + `CHAR(3)` currency.
+      **Done:** `V1__create_authorization_tables.sql` — plus `CHECK` constraints on `amount_minor >= 0` and the decision enum; `idempotency_key` is the table's **PRIMARY KEY** (stronger than a unique index), `request_fingerprint CHAR(64)` carries the SHA-256 over PAN|amount|currency|merchant used for `409` conflict detection.
+- [x] Money-correct DB design: optimistic locking, append-only writes, audit columns.
+      **Done:** `version BIGINT` (optimistic lock), decisions are append-only (the aggregate forbids re-deciding), `created_at`/`decided_at TIMESTAMPTZ`, JDBC time zone pinned to UTC, indexes on `(merchant_id)` and `(decided_at)`.
+- [x] **Persistence model ≠ domain model**: map the `Authorization` aggregate to tables inside the infrastructure adapter; keep JPA/Spring annotations out of `domain/` (the aggregate remains persistence-ignorant).
+      **Done:** `AuthorizationEntity.fromDomain()` / `.toDomain()` in the adapter; zero JPA imports in `domain/`. Rehydration builds a **masked-reference `CardNumber`** whose `raw()`/`luhnValid()` throw — since the full PAN is never stored, the domain type makes it *unrepresentable* after persistence (PCI by construction; covered by a dedicated unit test). The Phase 1 in-memory repository moved to `src/test/.../testing/` as a unit-test fake.
+- [x] `docker-compose.yml`: postgres + app; learn volumes, networks, healthchecks, `depends_on: condition: service_healthy`.
+      **Done:** postgres 17-alpine (file-based secrets, `pg_isready` healthcheck, `ntccpay_pgdata` volume) + `auth-api` service with `depends_on: condition: service_healthy`; the DB password is injected from a git-ignored `.env` with a hard guard (`${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in .env}`) so compose refuses to start with a missing secret; inside the network the datasource host is the service name (`postgres:5432`), on the host it's `localhost:5432`.
+- [x] Multi-stage `Dockerfile` → small non-root runtime image.
+      **Done:** Temurin `25-jdk-noble` build stage (wrapper + build files copied first so the dependency prefetch layer only invalidates on build-definition changes) → `25-jre-alpine` runtime, non-root `ntcc` user, `HEALTHCHECK` on `/actuator/health`, `MaxRAMPercentage=75`. Windows gotcha: CRLF checkouts break the `gradlew` shebang — `sed -i 's/\r$//'` in the image. Plain `jar` disabled so `build/libs` holds only the boot jar the Dockerfile copies.
 
-**Exit:** `docker compose up` runs everything; data survives container recreation;
-concurrent duplicate `Idempotency-Key` requests cannot double-insert (prove with a
-concurrency test).
+**Exit — verified:** `docker compose up --build` brings up postgres + app and Flyway
+migrates on boot; data survives container recreation (named volume); the concurrency
+proof test races two saves sharing one idempotency key across separate
+transactions and exactly one insert wins — the DB constraint is the guarantee
+(`successes=1, rejected=1, count=1`), not application code. 51/51 tests green;
+`ntccpay/auth-api:0.1.0-SNAPSHOT` builds through the multi-stage Dockerfile.
 
 ### Phase 3 — Kafka + the async pipeline (Week 5–7)
 > Learn: Kafka concepts, Spring Kafka, outbox pattern, consumer idempotency.

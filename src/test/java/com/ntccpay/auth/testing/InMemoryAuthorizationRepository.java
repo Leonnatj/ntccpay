@@ -1,19 +1,22 @@
-package com.ntccpay.auth.infrastructure.persistence;
+package com.ntccpay.auth.testing;
 
 import com.ntccpay.auth.application.port.out.AuthorizationRepository;
 import com.ntccpay.auth.domain.model.Authorization;
 import com.ntccpay.auth.domain.model.IdempotencyKey;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Phase 1 in-memory store: the decision path has zero I/O. The unique-key
- * semantics here mirror the DB unique constraint that replaces it in Phase 2.
+ * Test fixture: the Phase 1 in-memory store. Deliberately lives in test
+ * sources so the real Postgres adapter is the only repository on production
+ * code paths — unit and Cucumber tests stay container-free, while the JPA
+ * adapter is proven against real Postgres by JpaAuthorizationRepositoryTest.
+ *
+ * Not a Spring bean on purpose: @SpringBootTest component-scans com.ntccpay.auth,
+ * and a second AuthorizationRepository bean here would make the context ambiguous.
  */
-@Component
 public final class InMemoryAuthorizationRepository implements AuthorizationRepository {
 
     private final Map<IdempotencyKey, Authorization> byIdempotencyKey = new ConcurrentHashMap<>();
