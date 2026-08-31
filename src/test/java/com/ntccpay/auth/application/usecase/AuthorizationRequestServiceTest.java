@@ -5,7 +5,7 @@ import com.ntccpay.auth.application.port.in.AuthorizationCommand;
 import com.ntccpay.auth.application.port.in.AuthorizationResult;
 import com.ntccpay.auth.domain.model.Decision;
 import com.ntccpay.auth.domain.service.AuthorizationRuleEngine;
-import com.ntccpay.auth.infrastructure.persistence.InMemoryAuthorizationRepository;
+import com.ntccpay.auth.testing.InMemoryAuthorizationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

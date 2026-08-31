@@ -21,6 +21,23 @@ services:
       timeout: 5s
       retries: 10
 
+  auth-api:
+    build:
+      context: .
+    image: ntccpay/auth-api:0.1.0-SNAPSHOT
+    container_name: ntccpay-auth-api
+    environment:
+      # inside the compose network the DB host is the service name, not localhost
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ntccpay
+      SPRING_DATASOURCE_USERNAME: ntccpay
+      # injected from .env (git-ignored); never commit the real password
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in .env}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   ntccpay_pgdata:
 
@@ -31,3 +48,4 @@ secrets:
     file: ./secrets/postgres_password.txt
   postgres_db:
     file: ./secrets/postgres_db.txt
+

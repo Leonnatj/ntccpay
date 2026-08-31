@@ -1,0 +1,12 @@
+# everything the image build does not need; src/ and the gradle wrapper are the only essentials
+.gradle/
+build/
+.git/
+.idea/
+.vscode/
+k8s/
+docs/
+secrets/
+.env
+*.md
+docker-compose.yml

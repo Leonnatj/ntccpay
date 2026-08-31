@@ -79,6 +79,34 @@ public final class Authorization {
     }
 
     /**
+     * Persistence rehydration: rebuilds a stored, already-decided aggregate.
+     * For the infrastructure persistence adapter only — raises no domain events
+     * (events are raised when a request arrives or a decision is made, not when
+     * history is loaded). The aggregate stays persistence-ignorant.
+     */
+    public static Authorization rehydrate(AuthorizationId id,
+                                          IdempotencyKey idempotencyKey,
+                                          String requestFingerprint,
+                                          CardNumber cardNumber,
+                                          Money amount,
+                                          MerchantId merchant,
+                                          Decision decision,
+                                          ReasonCode reasonCode,
+                                          Instant decidedAt) {
+        if (decision == null) {
+            throw new IllegalArgumentException("a stored authorization must carry a decision");
+        }
+        if (decidedAt == null) {
+            throw new IllegalArgumentException("a stored authorization must carry decidedAt");
+        }
+        var authorization = new Authorization(id, idempotencyKey, requestFingerprint, cardNumber, amount, merchant);
+        authorization.decision = decision;
+        authorization.reasonCode = reasonCode;
+        authorization.decidedAt = decidedAt;
+        return authorization;
+    }
+
+    /**
      * Stable fingerprint of the request contents. Same key + same fingerprint means
      * "a retry of the same request"; same key + different fingerprint means conflict.
      */

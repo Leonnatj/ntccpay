@@ -6,7 +6,7 @@ import com.ntccpay.auth.application.usecase.AuthorizationRequestService;
 import com.ntccpay.auth.domain.model.Decision;
 import com.ntccpay.auth.domain.model.ReasonCode;
 import com.ntccpay.auth.domain.service.AuthorizationRuleEngine;
-import com.ntccpay.auth.infrastructure.persistence.InMemoryAuthorizationRepository;
+import com.ntccpay.auth.testing.InMemoryAuthorizationRepository;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;

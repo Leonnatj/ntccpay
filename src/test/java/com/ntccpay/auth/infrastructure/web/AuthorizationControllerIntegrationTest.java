@@ -11,7 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,9 +27,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Proves the Phase 1 security posture from docs/security.md:
  * AuthN on the endpoint, idempotent HTTP semantics, and no full PAN in logs.
  */
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(properties = "ntccpay.security.api-keys.acme-corp=test-key-123")
 @AutoConfigureMockMvc
 class AuthorizationControllerIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine");
 
     private static final String VALID_BODY = """
             {"pan":"4242424242424242","amountMinor":1000,"currency":"USD","merchant":"acme-corp"}
