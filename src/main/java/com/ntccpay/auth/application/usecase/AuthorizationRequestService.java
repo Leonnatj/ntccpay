@@ -4,6 +4,7 @@ import com.ntccpay.auth.application.exception.IdempotencyConflictException;
 import com.ntccpay.auth.application.port.in.AuthorizationCommand;
 import com.ntccpay.auth.application.port.in.AuthorizationResult;
 import com.ntccpay.auth.application.port.in.RequestAuthorization;
+import com.ntccpay.auth.application.exception.IdempotencyRaceException;
 import com.ntccpay.auth.application.port.out.AuthorizationRepository;
 import com.ntccpay.auth.domain.model.Authorization;
 import com.ntccpay.auth.domain.model.AuthorizationId;
@@ -45,23 +46,36 @@ public class AuthorizationRequestService implements RequestAuthorization {
 
         Optional<Authorization> existing = repository.findByIdempotencyKey(key);
         if (existing.isPresent()) {
-            var original = existing.get();
-            if (!original.requestFingerprint().equals(fingerprint)) {
-                throw new IdempotencyConflictException(key);
-            }
-            log.info("Idempotent replay for key {}: returning original decision", key.value());
-            return AuthorizationResult.replayOf(original);
+            return replayOrConflict(existing.get(), key, fingerprint);
         }
 
         var decision = ruleEngine.evaluate(card, amount);
         var authorization = Authorization.request(
                 AuthorizationId.newId(), key, fingerprint, card, amount, merchant);
         authorization.decide(decision);
-        repository.save(authorization);
+        try {
+            repository.save(authorization);
+        } catch (IdempotencyRaceException race) {
+            // Our lookup found nothing, but another request with the same key committed
+            // before our insert landed (the DB PRIMARY KEY is the arbiter). Re-read the
+            // winner and apply the same rules as the pre-check path: replay for an
+            // identical request, conflict for a different one.
+            var winner = repository.findByIdempotencyKey(key).orElseThrow(() -> race);
+            return replayOrConflict(winner, key, fingerprint);
+        }
 
         // cardNumber.toString() is masked by construction - safe to log.
         log.info("Authorization decided: id={}, card={}, decision={}, reason={}",
                 authorization.id(), authorization.cardNumber(), authorization.decision(), authorization.reasonCode());
         return AuthorizationResult.of(authorization, false);
+    }
+
+    /** Same key + same fingerprint = a retry of the same request (replay); different contents = conflict. */
+    private AuthorizationResult replayOrConflict(Authorization original, IdempotencyKey key, String fingerprint) {
+        if (!original.requestFingerprint().equals(fingerprint)) {
+            throw new IdempotencyConflictException(key);
+        }
+        log.info("Idempotent replay for key {}: returning original decision", key.value());
+        return AuthorizationResult.replayOf(original);
     }
 }
