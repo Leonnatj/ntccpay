@@ -1,5 +1,6 @@
 package com.ntccpay.auth.infrastructure.persistence;
 
+import com.ntccpay.auth.application.exception.IdempotencyRaceException;
 import com.ntccpay.auth.application.port.out.AuthorizationRepository;
 import com.ntccpay.auth.domain.model.Authorization;
 import com.ntccpay.auth.domain.model.AuthorizationId;
@@ -39,9 +40,9 @@ public class JpaAuthorizationRepository implements AuthorizationRepository {
                     jpa.saveAndFlush(AuthorizationEntity.fromDomain(authorization)));
         } catch (DataIntegrityViolationException e) {
             // The PRIMARY KEY on idempotency_keys is the concurrency-proof guarantee:
-            // two racing inserts cannot both commit. Translated to the port's contract.
-            throw new IllegalStateException(
-                    "duplicate idempotency key '" + authorization.idempotencyKey().value() + "'", e);
+            // two racing inserts cannot both commit. The loser reports the race via
+            // the port's contract; the use case resolves it as a replay or a conflict.
+            throw new IdempotencyRaceException(authorization.idempotencyKey());
         }
     }
 

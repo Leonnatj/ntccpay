@@ -1,5 +1,6 @@
 package com.ntccpay.auth.infrastructure.persistence;
 
+import com.ntccpay.auth.application.exception.IdempotencyRaceException;
 import com.ntccpay.auth.domain.model.Authorization;
 import com.ntccpay.auth.domain.model.AuthorizationId;
 import com.ntccpay.auth.domain.model.CardNumber;
@@ -82,8 +83,8 @@ class JpaAuthorizationRepositoryTest {
         repository.save(approved("k-duplicate", AuthorizationId.newId()));
 
         assertThatThrownBy(() -> repository.save(approved("k-duplicate", AuthorizationId.newId())))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("duplicate idempotency key");
+                .isInstanceOf(IdempotencyRaceException.class)
+                .hasMessageContaining("committed first");
         // The row-count guarantee ("exactly one row per key") is proven by
         // concurrentRequestsSharingAKeyCannotDoubleInsert, where each save runs
         // in its own session and transaction exactly as in production — within
@@ -109,8 +110,8 @@ class JpaAuthorizationRepositoryTest {
                     future.get(30, TimeUnit.SECONDS);
                     successes++;
                 } catch (ExecutionException e) {
-                    assertThat(e.getCause()).isInstanceOf(IllegalStateException.class)
-                            .hasMessageContaining("duplicate idempotency key");
+                    assertThat(e.getCause()).isInstanceOf(IdempotencyRaceException.class)
+                            .hasMessageContaining("committed first");
                     rejected++;
                 }
             }

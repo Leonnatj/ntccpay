@@ -1,5 +1,6 @@
 package com.ntccpay.auth.testing;
 
+import com.ntccpay.auth.application.exception.IdempotencyRaceException;
 import com.ntccpay.auth.application.port.out.AuthorizationRepository;
 import com.ntccpay.auth.domain.model.Authorization;
 import com.ntccpay.auth.domain.model.IdempotencyKey;
@@ -16,8 +17,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * Not a Spring bean on purpose: @SpringBootTest component-scans com.ntccpay.auth,
  * and a second AuthorizationRepository bean here would make the context ambiguous.
+ *
+ * Non-final on purpose: tests subclass it to simulate race conditions (e.g. a save
+ * that throws {@code IdempotencyRaceException} because a concurrent twin committed first).
  */
-public final class InMemoryAuthorizationRepository implements AuthorizationRepository {
+public class InMemoryAuthorizationRepository implements AuthorizationRepository {
 
     private final Map<IdempotencyKey, Authorization> byIdempotencyKey = new ConcurrentHashMap<>();
 
@@ -25,8 +29,7 @@ public final class InMemoryAuthorizationRepository implements AuthorizationRepos
     public void save(Authorization authorization) {
         var previous = byIdempotencyKey.putIfAbsent(authorization.idempotencyKey(), authorization);
         if (previous != null && !previous.id().equals(authorization.id())) {
-            throw new IllegalStateException(
-                    "duplicate idempotency key '" + authorization.idempotencyKey().value() + "'");
+            throw new IdempotencyRaceException(authorization.idempotencyKey());
         }
     }
 
