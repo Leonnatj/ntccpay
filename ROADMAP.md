@@ -339,11 +339,3 @@ by execution, not theory.
    dependencies: Spring Web, Validation, Actuator, Lombok. Add Cucumber via
    `io.cucumber:cucumber-bom` + `cucumber-java`, `cucumber-spring`, `cucumber-junit-platform-engine`.
 3. First commit, then build `POST /v1/authorizations` per Phase 1.
-
-Ask me to scaffold Phase 1 (project structure, rule engine with tests, controller,
-idempotency) whenever you're ready.
-
-
-
-
-
