@@ -226,6 +226,7 @@ transactions and exactly one insert wins — the DB constraint is the guarantee
 
 ### Phase 3 — Kafka + the async pipeline (Week 5–7)
 > Learn: Kafka concepts, Spring Kafka, outbox pattern, consumer idempotency.
+- [x] Repo restructured as a Gradle multi-module monorepo (`services/*`, ADR 0004): one checkout for all services + infra + docs, zero shared code between service modules
 
 - [ ] Kafka (KRaft mode) in docker-compose; topics `auths.v1`, `captures.v1`
 - [ ] **Transactional outbox**: the `Authorization` aggregate raises domain events; the auth transaction persists them to an outbox table; a poller publishes them to Kafka (cross-aggregate consistency through events, never shared tables)

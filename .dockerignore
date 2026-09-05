@@ -9,4 +9,5 @@ docs/
 secrets/
 .env
 *.md
+*.log
 docker-compose.yml

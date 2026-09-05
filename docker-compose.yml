@@ -23,7 +23,10 @@ services:
 
   auth-api:
     build:
+      # Context is the repo root so every service shares the single Gradle
+      # wrapper; the Dockerfile lives next to its service under services/.
       context: .
+      dockerfile: services/auth-api/Dockerfile
     image: ntccpay/auth-api:0.1.0-SNAPSHOT
     container_name: ntccpay-auth-api
     environment:

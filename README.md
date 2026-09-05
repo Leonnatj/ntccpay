@@ -9,6 +9,11 @@ persistent (PostgreSQL + Flyway) and fully Dockerized. Next up: Phase 3
 (Kafka + the transactional outbox). See [ROADMAP.md](ROADMAP.md) for the full
 phase plan.
 
+**Repository layout:** a Gradle multi-module monorepo (ADR 0004). Every
+service lives under `services/` with its own build file, package root, DB
+schema and Dockerfile; there is deliberately no shared code between services.
+The root build pins versions and aggregates the service subprojects.
+
 ## Architecture
 
 Hexagonal + DDD:
@@ -40,7 +45,7 @@ Hexagonal + DDD:
 ## Running and testing
 
 ```bash
-./gradlew test             # 51 tests: unit + Cucumber BDD + integration
+./gradlew test             # 52 tests: unit + Cucumber BDD + integration (root build aggregates all services)
 ./gradlew bootRun          # needs the compose Postgres running on localhost:5432
 ```
 
