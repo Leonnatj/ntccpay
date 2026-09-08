@@ -28,7 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * AuthN on the endpoint, idempotent HTTP semantics, and no full PAN in logs.
  */
 @Testcontainers(disabledWithoutDocker = true)
-@SpringBootTest(properties = "ntccpay.security.api-keys.acme-corp=test-key-123")
+@SpringBootTest(properties = {
+        "ntccpay.security.api-keys.acme-corp=test-key-123",
+        // no Kafka in this slice; the outbox poller is exercised by OutboxRelayIntegrationTest
+        "ntccpay.outbox.relay-enabled=false",
+        "spring.kafka.admin.auto-create=false"
+})
 @AutoConfigureMockMvc
 class AuthorizationControllerIntegrationTest {
 

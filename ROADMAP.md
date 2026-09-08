@@ -228,12 +228,12 @@ transactions and exactly one insert wins — the DB constraint is the guarantee
 > Learn: Kafka concepts, Spring Kafka, outbox pattern, consumer idempotency.
 - [x] Repo restructured as a Gradle multi-module monorepo (`services/*`, ADR 0004): one checkout for all services + infra + docs, zero shared code between service modules
 
-- [ ] Kafka (KRaft mode) in docker-compose; topics `auths.v1`, `captures.v1`
-- [ ] **Transactional outbox**: the `Authorization` aggregate raises domain events; the auth transaction persists them to an outbox table; a poller publishes them to Kafka (cross-aggregate consistency through events, never shared tables)
+- [x] Kafka (KRaft mode) in docker-compose; topics `auths.v1`, `captures.v1`
+- [x] **Transactional outbox**: the `Authorization` aggregate raises domain events; the auth transaction persists them to an outbox table; a poller publishes them to Kafka (cross-aggregate consistency through events, never shared tables)
 - [ ] **ledger-service**: consumes `auths.v1`, writes double-entry rows (debit issuer-pending, credit merchant receivable); idempotent via `processed_events` table keyed by event id; the `LedgerTransaction` aggregate enforces "debits = credits"
 - [ ] **notification-service**: same topic, logs/mock webhook + email; poison pills → DLQ topic
 - [ ] Learn consumer groups, offsets, non-blocking retries (`DefaultErrorHandler` + retry topics), DLQs
-- [ ] Define `AuthorizationAuthorized` as a versioned JSON event schema, documented in the repo (published language between contexts)
+- [x] Define `AuthorizationAuthorized` as a versioned JSON event schema, documented in the repo (published language between contexts)
 
 **Exit:** auth request → ledger row within ~2s; killing a consumer and restarting
 resumes without loss or duplication; a malformed event lands on the DLQ; auth-api

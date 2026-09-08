@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -26,18 +27,32 @@ import java.util.Optional;
 public class JpaAuthorizationRepository implements AuthorizationRepository {
 
     private final AuthorizationJpaRepository jpa;
+    private final OutboxJpaRepository outbox;
     private final TransactionTemplate transactions;
 
-    public JpaAuthorizationRepository(AuthorizationJpaRepository jpa, PlatformTransactionManager transactionManager) {
+    public JpaAuthorizationRepository(AuthorizationJpaRepository jpa, OutboxJpaRepository outbox,
+                                      PlatformTransactionManager transactionManager) {
         this.jpa = jpa;
+        this.outbox = outbox;
         this.transactions = new TransactionTemplate(transactionManager);
     }
 
     @Override
     public void save(Authorization authorization) {
         try {
-            transactions.executeWithoutResult(status ->
-                    jpa.saveAndFlush(AuthorizationEntity.fromDomain(authorization)));
+            transactions.executeWithoutResult(status -> {
+                jpa.saveAndFlush(AuthorizationEntity.fromDomain(authorization));
+                // Transactional outbox (ADR 0005): the decision and its domain
+                // events land in ONE transaction — a decision row without its
+                // event is impossible. Only decision events are relayed.
+                var events = authorization.domainEvents().stream()
+                        .map(e -> OutboxEventEntity.fromDecisionEvent(authorization, e))
+                        .filter(Objects::nonNull)
+                        .toList();
+                if (!events.isEmpty()) {
+                    outbox.saveAllAndFlush(events);
+                }
+            });
         } catch (DataIntegrityViolationException e) {
             // The PRIMARY KEY on idempotency_keys is the concurrency-proof guarantee:
             // two racing inserts cannot both commit. The loser reports the race via

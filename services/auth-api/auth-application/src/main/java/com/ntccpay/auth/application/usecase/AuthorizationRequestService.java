@@ -15,15 +15,15 @@ import com.ntccpay.auth.domain.model.Money;
 import com.ntccpay.auth.domain.service.AuthorizationRuleEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 /**
  * Orchestrates: idempotency check → rule evaluation → aggregate decision → save.
  * This is application logic only; the rules live in the domain.
+ * Deliberately framework-free: it is wired as a bean by
+ * {@code AuthApiConfig} in the infrastructure module.
  */
-@Service
 public class AuthorizationRequestService implements RequestAuthorization {
 
     private static final Logger log = LoggerFactory.getLogger(AuthorizationRequestService.class);

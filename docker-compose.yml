@@ -21,6 +21,35 @@ services:
       timeout: 5s
       retries: 10
 
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: ntccpay-kafka
+    ports:
+      - "9092:9092"            # host/dev access via localhost:9092
+    expose:
+      - "19092"               # compose-network access via `kafka:19092`
+    environment:
+      # KRaft combined mode: one node runs broker + controller (official image;
+      # env vars map to server.properties keys: . -> _, _ -> __, - -> ___, KAFKA_ prefix)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
   auth-api:
     build:
       # Context is the repo root so every service shares the single Gradle
@@ -35,10 +64,15 @@ services:
       SPRING_DATASOURCE_USERNAME: ntccpay
       # injected from .env (git-ignored); never commit the real password
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in .env}
+      # Kafka: intra-network listener (advertised as kafka:19092); the host/dev
+      # listener is PLAINTEXT_HOST on localhost:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     ports:
       - "8080:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
 volumes:
@@ -51,4 +85,3 @@ secrets:
     file: ./secrets/postgres_password.txt
   postgres_db:
     file: ./secrets/postgres_db.txt
-

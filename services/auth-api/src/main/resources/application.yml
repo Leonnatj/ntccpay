@@ -20,6 +20,16 @@ spring:
           time_zone: UTC
   flyway:
     locations: classpath:db/migration
+  kafka:
+    # Host/dev default; compose overrides via SPRING_KAFKA_BOOTSTRAP_SERVERS.
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # at-least-once: acks=all + retries; consumers deduplicate via event id
+      acks: all
+      enable-idempotence: true
+      retries: 10
 
 server:
   port: 8080
@@ -34,6 +44,12 @@ ntccpay:
     # Development only. Real merchant keys come from the environment / secrets manager.
     api-keys:
       acme-corp: change-me-acme-key
+  outbox:
+    topic: auths.v1
+    relay-enabled: true
+    relay-poll-millis: 1000
+    relay-batch-size: 50
+    relay-send-timeout-millis: 5000
 
 management:
   endpoints:
