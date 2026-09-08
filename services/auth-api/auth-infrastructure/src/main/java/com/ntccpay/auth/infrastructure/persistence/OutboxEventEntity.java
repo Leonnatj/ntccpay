@@ -16,6 +16,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import org.springframework.data.domain.Persistable;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
@@ -24,14 +26,17 @@ import java.util.UUID;
  * Persistence model of one transactional-outbox row (ADR 0005): the versioned
  * {@code auths.v1} payload is written here in the SAME database transaction as
  * the Authorization aggregate, so a decision row without its event is
- * impossible. The {@link OutboxRelay} publishes rows where {@code published_at}
- * is null and marks them afterwards.
+ * impossible. {@link com.ntccpay.auth.infrastructure.outbox.OutboxRelay}
+ * publishes rows where {@code published_at} is null and marks them afterwards.
  */
 @Entity
 @Table(name = "outbox_events")
 public class OutboxEventEntity implements Persistable<UUID> {
 
-    private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
+    private static final ObjectMapper JSON = new ObjectMapper()
+            .findAndRegisterModules()
+            // auths.v1 contract (docs/events/auths.v1.md): timestamps are ISO-8601
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Id
     private UUID id;

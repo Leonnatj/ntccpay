@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build context is the REPOSITORY ROOT (see docker-compose.yml: build context ".")
 # so every service build shares the single Gradle wrapper. Only this service's
-# sources are copied into the build stage.
+# modules (boot root + its layer modules) are copied into the build stage.
 
 # ---- build stage: compile with the Gradle wrapper on a JDK 25 image ----
 FROM eclipse-temurin:25-jdk-noble AS build
@@ -13,11 +13,17 @@ COPY gradlew ./
 COPY gradle ./gradle
 COPY build.gradle.kts settings.gradle.kts gradle.properties ./
 COPY services/auth-api/build.gradle.kts services/auth-api/build.gradle.kts
+COPY services/auth-api/auth-domain/build.gradle.kts services/auth-api/auth-domain/build.gradle.kts
+COPY services/auth-api/auth-application/build.gradle.kts services/auth-api/auth-application/build.gradle.kts
+COPY services/auth-api/auth-infrastructure/build.gradle.kts services/auth-api/auth-infrastructure/build.gradle.kts
 # the repo is checked out with CRLF line endings on Windows; the wrapper
 # shell script cannot run with \r in its shebang and command lines
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 RUN ./gradlew --no-daemon :services:auth-api:dependencies > /dev/null 2>&1 || true
 
+COPY services/auth-api/auth-domain/src services/auth-api/auth-domain/src
+COPY services/auth-api/auth-application/src services/auth-api/auth-application/src
+COPY services/auth-api/auth-infrastructure/src services/auth-api/auth-infrastructure/src
 COPY services/auth-api/src ./services/auth-api/src
 RUN ./gradlew --no-daemon :services:auth-api:bootJar
 

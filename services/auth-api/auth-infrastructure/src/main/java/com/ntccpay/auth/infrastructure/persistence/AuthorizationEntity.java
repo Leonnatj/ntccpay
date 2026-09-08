@@ -1,6 +1,5 @@
 package com.ntccpay.auth.infrastructure.persistence;
 
-import com.ntccpay.auth.application.port.out.AuthorizationRepository;
 import com.ntccpay.auth.domain.model.Authorization;
 import com.ntccpay.auth.domain.model.AuthorizationId;
 import com.ntccpay.auth.domain.model.CardNumber;

@@ -22,7 +22,7 @@ services:
       retries: 10
 
   kafka:
-    image: apache/kafka:3.9.0
+    image: apache/kafka:4.0.0
     container_name: ntccpay-kafka
     ports:
       - "9092:9092"            # host/dev access via localhost:9092
